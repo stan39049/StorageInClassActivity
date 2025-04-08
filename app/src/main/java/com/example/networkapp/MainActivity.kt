@@ -14,10 +14,9 @@ import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import com.squareup.picasso.Picasso
 import org.json.JSONObject
+import java.io.File
 
-// TODO (1: Fix any bugs)
-// TODO (2: Add function saveComic(...) to save comic info when downloaded
-// TODO (3: Automatically load previously saved comic when app starts)
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -43,16 +42,19 @@ class MainActivity : AppCompatActivity() {
         showButton.setOnClickListener {
             downloadComic(numberEditText.text.toString())
         }
-
+        loadComic()
     }
 
     // Fetches comic from web as JSONObject
     private fun downloadComic (comicId: String) {
         val url = "https://xkcd.com/$comicId/info.0.json"
         requestQueue.add (
-            JsonObjectRequest(url
-                , {showComic(it)}
-                , {}
+            JsonObjectRequest(url,
+                { response ->
+                    showComic(response)
+                    saveComic(response)
+                },
+                {}
             )
         )
     }
@@ -66,6 +68,27 @@ class MainActivity : AppCompatActivity() {
 
     // Implement this function
     private fun saveComic(comicObject: JSONObject) {
+        val filename = "cached_comic.json"
+        val fileContents = comicObject.toString()
+
+        openFileOutput(filename, MODE_PRIVATE).use { output ->
+            output.write(fileContents.toByteArray())
+        }
+    }
+
+    private fun loadComic() {
+        val filename = "cached_comic.json"
+
+
+        val file = File(filesDir, filename)
+        if (!file.exists()) return
+
+        val comic = JSONObject(file.readText())
+
+        titleTextView.text = comic.getString("title")
+        descriptionTextView.text = comic.getString("alt")
+        Picasso.get().load(comic.getString("img")).into(comicImageView)
+
 
     }
 
